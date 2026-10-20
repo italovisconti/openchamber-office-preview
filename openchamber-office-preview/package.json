@@ -1,0 +1,73 @@
+{
+  "name": "openchamber-office-preview",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "bun": ">=1.3.0"
+  },
+  "openchamber": {
+    "apiVersion": 1,
+    "engines": {
+      "openchamber": ">=2.5.0"
+    },
+    "contributes": {
+      "panel": {
+        "id": "office-preview",
+        "name": "Office Preview",
+        "icon": "file-text"
+      },
+      "fileEditors": [
+        {
+          "id": "xlsx",
+          "title": "Vista previa XLSX",
+          "match": ["*.xlsx"],
+          "entry": "editor/xlsx.html",
+          "content": "binary"
+        },
+        {
+          "id": "docx",
+          "title": "Vista previa DOCX",
+          "match": ["*.docx"],
+          "entry": "editor/docx.html",
+          "content": "binary"
+        },
+        {
+          "id": "pptx",
+          "title": "Vista previa PPTX",
+          "match": ["*.pptx"],
+          "entry": "editor/pptx.html",
+          "content": "binary"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "build": "bun run scripts/build.ts",
+    "typecheck": "bun run scripts/generate-pptx-worker.ts && tsc --noEmit",
+    "test:bridge": "bun test tests/bridge",
+    "test:security": "bun test tests/security",
+    "test:viewers": "bun test tests/viewers",
+    "test:manifest": "bun test tests/manifest",
+    "package": "bun run build && bun run scripts/package.ts"
+  },
+  "dependencies": {
+    "@file-viewer/capability-pptx-charts": "3.2.2",
+    "@file-viewer/pptx": "3.2.2",
+    "@openchamber/sdk": "2.5.0",
+    "docx-preview": "0.4.1",
+    "exceljs": "4.4.0",
+    "fflate": "0.8.3",
+    "jszip": "3.10.2",
+    "ssf": "0.11.2"
+  },
+  "devDependencies": {
+    "@types/bun": "1.3.3",
+    "@types/node": "24.10.0",
+    "esbuild": "0.25.5",
+    "jsdom": "30.1.3",
+    "@types/jsdom": "30.0.0",
+    "typescript": "5.9.3"
+  }
+}

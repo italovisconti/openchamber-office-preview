@@ -1,0 +1,4 @@
+# Precompiled third-party bundles retain whitespace inside library string literals.
+openchamber-office-preview/editor/*.js -whitespace linguist-generated=true
+openchamber-office-preview/editor/*.css linguist-generated=true
+*.zip binary
