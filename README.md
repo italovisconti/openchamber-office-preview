@@ -29,6 +29,22 @@ Para quitarla, abre **Settings → Extensions** y desinstala **Office Preview**.
 - **PPTX:** diapositivas visibles, formas, imágenes y gráficos compatibles con el motor incluido.
 - Recursos locales, temas claro/oscuro y sin botones de edición o guardado.
 
+## Capturas
+
+Vistas reales en OpenChamber con documentos ficticios de prueba. La representación es aproximada y puede diferir de Office.
+
+**Hoja de cálculo (XLSX)**
+
+![Vista de una hoja de cálculo ficticia con valores, formato básico y navegación](docs/screenshots/xlsx.png)
+
+**Documento (DOCX)**
+
+![Vista de un documento ficticio con título y tabla; el ancho visible depende del panel](docs/screenshots/docx.png)
+
+**Presentación (PPTX)**
+
+![Vista de una presentación ficticia con dos diapositivas y un gráfico](docs/screenshots/pptx.png)
+
 ## Compatibilidad y límites
 
 Probado en **OpenChamber web 2.5.0 con Chromium**. Desktop todavía no está probado. Máximo 20 MB por archivo, con límites adicionales de seguridad y tamaño de hojas. Se rechazan documentos con contenido activo, recursos externos y otras características no compatibles.
