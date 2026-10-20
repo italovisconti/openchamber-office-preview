@@ -4,11 +4,23 @@ Visor local y de solo lectura de archivos **XLSX, DOCX y PPTX**, integrado en la
 
 ## Instalación
 
-1. Descarga el **[ZIP precompilado v0.1.0](openchamber-office-preview/dist/openchamber-office-preview-0.1.0.zip)** usando «Download raw file» en GitHub.
-2. Abre **Settings → Extensions** en OpenChamber e instala el ZIP.
-3. Selecciona un `.xlsx`, `.docx` o `.pptx` en el árbol de archivos.
+Requiere **OpenChamber 2.5.0 o posterior**; la versión web 2.5.0 es la comprobada.
+
+1. Abre el **[ZIP precompilado v0.1.0](openchamber-office-preview/dist/openchamber-office-preview-0.1.0.zip)** y pulsa **Download raw file** en GitHub. Descarga ese archivo, no el ZIP del repositorio completo.
+2. En OpenChamber, abre **Settings → Extensions** (Configuración → Extensiones).
+3. Usa la opción de instalación desde ZIP, selecciona `openchamber-office-preview-0.1.0.zip` y confirma la instalación. **No lo descomprimas**.
+4. Comprueba que **Office Preview** aparece instalado y habilitado en la lista de extensiones.
+5. Abre tu proyecto y selecciona un `.xlsx`, `.docx` o `.pptx` en el árbol de archivos. La vista previa aparecerá dentro de su pestaña de archivo.
 
 No hace falta compilar ni instalar dependencias para usarlo. El paquete pesa aproximadamente **1 MB**.
+
+### Si no aparece la vista previa
+
+- Confirma que la extensión está habilitada y vuelve a abrir la pestaña del documento. Si sigue sin aparecer, recarga OpenChamber.
+- Comprueba que instalaste el ZIP precompilado, no **Code → Download ZIP** de GitHub.
+- Prueba un documento sencillo de menos de 20 MB. Los archivos cifrados, con contenido activo o características no compatibles pueden ser rechazados.
+
+Para quitarla, abre **Settings → Extensions** y desinstala **Office Preview**. Esto no elimina tus documentos.
 
 ## Qué ofrece
 
