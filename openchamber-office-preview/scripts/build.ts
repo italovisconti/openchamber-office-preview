@@ -1,5 +1,5 @@
 import { build } from 'esbuild';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { $ } from 'bun';
@@ -25,6 +25,15 @@ for (const [name, entry] of Object.entries(entries)) {
     sourcemap: false,
     minify: true,
   });
+  if (name === 'docx') {
+    // DOCX's CSP forbids linked stylesheets. Keep its inline CSS synchronized
+    // with the freshly compiled UI instead of retaining an older theme.
+    const htmlPath = resolve(root, 'editor/docx.html');
+    const css = await readFile(resolve(root, 'editor/docx.css'), 'utf8');
+    const html = await readFile(htmlPath, 'utf8');
+    if (!/<style>[\s\S]*?<\/style>/.test(html)) throw new Error('DOCX inline stylesheet is missing');
+    await writeFile(htmlPath, html.replace(/<style>[\s\S]*?<\/style>/, () => `<style>${css}</style>`));
+  }
 }
 
 console.log('Built three classic IIFE editors and local stylesheets.');

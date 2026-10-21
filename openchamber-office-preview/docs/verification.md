@@ -55,3 +55,14 @@ El ZIP se distribuye como asset de la release `v0.1.0`, no como archivo versiona
 
 - Asset: `openchamber-office-preview-0.1.0.zip`, 1.067.801 bytes; 3.000.912 bytes descomprimidos y 283 archivos.
 - SHA-256: `c6d9ad1ddc5233a7fbe6157d7133ee5162b1c6a045e5c50c2dfa9d12a6681480`.
+
+## Actualización v0.1.1 — 2026-10-21
+
+- `bun test`: **42 pasan, 0 fallan**; typecheck, build y empaquetado correctos.
+- ZIP: 1.069.472 bytes, 3.005.844 bytes descomprimidos, 283 archivos. SHA-256: `c029b604edeb2dca8d2638ef1707dc12dc6abc471a127eba47cebad7837411ea`.
+- Chromium confirmó fondo blanco y controles claros en los tres formatos, tanto con el host claro como oscuro. Se revisó una captura con documentos ficticios; los colores definidos por el documento no se invierten.
+- Se reprodujo un rechazo PPTX causado por una relación interna de configuración de impresora. La copia canónica descarta únicamente las partes `printerSettings` válidas, sus relaciones y overrides; no se habilitan binarios/OLE arbitrarios. La muestra privada abrió en el iframe real y su hash y mtime originales no cambiaron. Ni la muestra ni su contenido se incorporan al repositorio.
+- Las regresiones sintéticas cubren destinos externos, MIME incorrecto, ubicaciones no admitidas y retirada de workbooks de gráficos con diferencias de mayúsculas/minúsculas.
+- Se repitió la prueba CSP DOCX: solicitudes CSS externas y del mismo origen bloqueadas antes del routing, con PNG embebido legítimo cargado.
+- La compilación sincroniza el CSS inline de DOCX con la hoja generada para impedir que conserve una versión anterior del tema.
+- No se añadió un botón nativo «Abrir en app»: el SDK 2.5.0 no expone esa acción a extensiones. Debe utilizarse el control propio del host; no se solicitan permisos nuevos ni se sustituye por una descarga.

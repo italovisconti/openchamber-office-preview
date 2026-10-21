@@ -21,9 +21,9 @@ El repositorio incluye el JavaScript compilado: no necesitas ejecutar un build. 
 
 ### Opción 2: ZIP de la release
 
-1. Descarga el **[ZIP precompilado v0.1.0](https://github.com/italovisconti/openchamber-office-preview/releases/download/v0.1.0/openchamber-office-preview-0.1.0.zip)** desde la [release de GitHub](https://github.com/italovisconti/openchamber-office-preview/releases/tag/v0.1.0). Usa ese archivo, no los archivos **Source code** del repositorio.
+1. Descarga el **[ZIP precompilado v0.1.1](https://github.com/italovisconti/openchamber-office-preview/releases/download/v0.1.1/openchamber-office-preview-0.1.1.zip)** desde la [release de GitHub](https://github.com/italovisconti/openchamber-office-preview/releases/tag/v0.1.1). Usa ese archivo, no los archivos **Source code** del repositorio.
 2. En OpenChamber, abre **Settings → Extensions** (Configuración → Extensiones).
-3. Usa la opción de instalación desde ZIP, selecciona `openchamber-office-preview-0.1.0.zip` y confirma la instalación. **No lo descomprimas**.
+3. Usa la opción de instalación desde ZIP, selecciona `openchamber-office-preview-0.1.1.zip` y confirma la instalación. **No lo descomprimas**.
 4. Comprueba que **Office Preview** aparece instalado y habilitado en la lista de extensiones.
 5. Abre tu proyecto y selecciona un `.xlsx`, `.docx` o `.pptx` en el árbol de archivos. La vista previa aparecerá dentro de su pestaña de archivo.
 
@@ -42,7 +42,7 @@ Para quitarla, abre **Settings → Extensions** y desinstala **Office Preview**.
 - **XLSX:** hojas visibles, valores y formato básico, navegación paginada y resultados de fórmulas guardados en el archivo.
 - **DOCX:** texto, tablas e imágenes, con desplazamiento para páginas anchas.
 - **PPTX:** diapositivas visibles, formas, imágenes y gráficos compatibles con el motor incluido.
-- Recursos locales, temas claro/oscuro y sin botones de edición o guardado.
+- Recursos locales, interfaz y superficie de lectura siempre claras, sin botones de edición o guardado. Se conservan los colores originales del documento.
 
 ## Capturas
 

@@ -12,7 +12,11 @@ export function startOfficePreview(format: OfficeFormat, adapter: ViewerAdapter)
   const session = new ReadOnlySession(shell, format, adapter);
   let generation = 0;
 
-  host.onReady((context) => applyHostReady(context, document.documentElement));
+  host.onReady((context) => {
+    applyHostReady(context, document.documentElement);
+    // Documents and native form controls keep a light canvas even in a dark host.
+    document.documentElement.style.colorScheme = 'light';
+  });
   host.onFileOpen((file: FileEditorDocument) => {
     const current = ++generation;
     if (file.encoding !== 'binary') {

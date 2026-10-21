@@ -29,4 +29,38 @@ describe('PPTX visible slide package copy', () => {
     expect(await result.file('[Content_Types].xml')!.async('text')).not.toContain('slide9.xml');
     expect(source).toEqual(original);
   });
+
+  test('strips chart-linked workbook with arbitrary case-preserved name and override', async () => {
+    const rel = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+    const zip = await JSZip.loadAsync(await fixture());
+    const types = await zip.file('[Content_Types].xml')!.async('text');
+    zip.file('[Content_Types].xml', types.replace('</Types>', '<Override PartName="/ppt/embeddings/Quarterly Summary.XLSX" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"/></Types>'));
+    zip.file('ppt/charts/chart1.xml', `<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:r="${rel}"><c:chart><c:externalData r:id="rChart"/></c:chart></c:chartSpace>`);
+    zip.file('ppt/charts/_rels/chart1.xml.rels', `<Relationships xmlns="${PKG}"><Relationship Id="rChart" Type="${rel}/package" Target="../embeddings/Quarterly Summary.xlsx"/></Relationships>`);
+    zip.file('ppt/embeddings/Quarterly Summary.XLSX', 'not opened as a nested archive');
+    const output = await visibleSlidesCopy(await zip.generateAsync({ type: 'uint8array' }));
+    const rendered = await JSZip.loadAsync(output);
+    expect(rendered.file('ppt/embeddings/Quarterly Summary.XLSX')).toBeNull();
+    expect(await rendered.file('ppt/charts/_rels/chart1.xml.rels')!.async('text')).not.toMatch(/<Relationship\b/);
+    expect(await rendered.file('ppt/charts/chart1.xml')!.async('text')).not.toContain('externalData');
+    expect(await rendered.file('[Content_Types].xml')!.async('text')).not.toContain('Quarterly Summary.XLSX');
+  });
+
+  test('resolves mixed-case chart part identity and removes workbook and chart metadata', async () => {
+    const rel = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+    const zip = await JSZip.loadAsync(await fixture());
+    zip.file('ppt/charts/Chart1.xml', `<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:r="${rel}"><c:externalData r:id="rChart"/></c:chartSpace>`);
+    zip.file('ppt/charts/_rels/chart1.xml.rels', `<Relationships xmlns="${PKG}"><Relationship Id="rChart" Type="${rel}/package" Target="../embeddings/Data.xlsx"/></Relationships>`);
+    zip.file('ppt/embeddings/Data.xlsx', 'embedded xlsx payload');
+    const result = await JSZip.loadAsync(await visibleSlidesCopy(await zip.generateAsync({ type: 'uint8array' })));
+    expect(result.file('ppt/embeddings/Data.xlsx')).toBeNull();
+    expect(await result.file('ppt/charts/Chart1.xml')!.async('text')).not.toContain('externalData');
+    expect(await result.file('ppt/charts/_rels/chart1.xml.rels')!.async('text')).not.toMatch(/<Relationship\b/);
+  });
+
+  test('fails closed when a chart relationship has no case-insensitive chart part match', async () => {
+    const zip = await JSZip.loadAsync(await fixture());
+    zip.file('ppt/charts/_rels/chart1.xml.rels', `<Relationships xmlns="${PKG}"/>`);
+    await expect(visibleSlidesCopy(await zip.generateAsync({ type: 'uint8array' }))).rejects.toThrow(/missing chart part/);
+  });
 });

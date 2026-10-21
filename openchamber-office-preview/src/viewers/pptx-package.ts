@@ -4,6 +4,7 @@ const MAX_SLIDES = 500;
 const NS = 'http://schemas.openxmlformats.org/presentationml/2006/main';
 const REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
 const PKG_REL = 'http://schemas.openxmlformats.org/package/2006/relationships';
+const CHART_NS = 'http://schemas.openxmlformats.org/drawingml/2006/chart';
 
 async function requiredXml(zip: JSZip, path: string): Promise<Document> {
   const file = zip.file(path);
@@ -47,25 +48,32 @@ export async function visibleSlidesCopy(bytes: Uint8Array): Promise<ArrayBuffer>
   for (const name of Object.keys(zip.files)) if (/^ppt\/slides\/slide\d+\.xml$/.test(name) && !kept.has(name)) { zip.remove(name); zip.remove(relPath(name)); }
   // Cached chart XML is sufficient; remove the linked XLSX before invoking the renderer.
   for (const name of Object.keys(zip.files)) {
-    const match = /^ppt\/charts\/_rels\/chart(\d+)\.xml\.rels$/i.exec(name);
+    const match = /^(ppt\/charts)\/_rels\/(chart\d+\.xml)\.rels$/i.exec(name);
     if (!match) continue;
-    const chartPath = `ppt/charts/chart${match[1]}.xml`;
+    const chartIdentity = `${match[1]}/${match[2]}`.toLowerCase();
+    const chartPath = Object.keys(zip.files).find((path) => !zip.files[path].dir && path.toLowerCase() === chartIdentity);
+    if (!chartPath) throw new Error('PPTX chart relationship references a missing chart part');
     const chartFile = zip.file(chartPath), relsFile = zip.file(name);
-    if (!chartFile || !relsFile) continue;
+    if (!chartFile || !relsFile) throw new Error('PPTX chart relationship part is missing');
     const chart = new DOMParser().parseFromString(await chartFile.async('text'), 'application/xml');
     const rels = new DOMParser().parseFromString(await relsFile.async('text'), 'application/xml');
     if (chart.querySelector('parsererror') || rels.querySelector('parsererror')) throw new Error('Invalid chart XML');
     let changed = false;
     for (const rel of [...rels.getElementsByTagNameNS(PKG_REL, 'Relationship')]) {
-      if (rel.getAttribute('Type') !== `${REL}/package` || rel.hasAttribute('TargetMode')) continue;
+      const mode = rel.getAttribute('TargetMode');
+      if (rel.getAttribute('Type') !== `${REL}/package`) continue;
+      if (mode !== null && mode !== 'Internal') throw new Error('External PPTX chart workbook relationships are not supported');
       const target = resolveChartWorkbookTarget(name, rel.getAttribute('Target') ?? '');
-      if (!/^ppt\/embeddings\/microsoft_excel_worksheet\d+\.xlsx$/i.test(target)) continue;
+      if (!target) throw new Error('Invalid PPTX chart workbook relationship target');
       const id = rel.getAttribute('Id');
-      const externalData = [...chart.getElementsByTagNameNS('*', 'externalData')].find((el) => el.getAttributeNS(REL, 'id') === id);
-      if (!externalData || !id) continue;
+      if (!id) throw new Error('PPTX chart workbook relationship is missing its identifier');
+      const externalData = [...chart.getElementsByTagNameNS(CHART_NS, 'externalData')].find((el) => el.getAttributeNS(REL, 'id') === id);
+      if (!externalData) throw new Error('PPTX chart workbook relationship has no matching externalData reference');
+      const actualTarget = Object.keys(zip.files).find((path) => !zip.files[path].dir && path.toLowerCase() === target.toLowerCase());
+      if (!actualTarget) throw new Error('PPTX chart workbook part is missing from the rendering copy');
       externalData.parentNode?.removeChild(externalData);
       rel.parentNode?.removeChild(rel);
-      zip.remove(target);
+      zip.remove(actualTarget);
       changed = true;
     }
     if (changed) {
@@ -86,14 +94,9 @@ export async function visibleSlidesCopy(bytes: Uint8Array): Promise<ArrayBuffer>
   const out = await zip.generateAsync({ type: 'arraybuffer', compression: 'DEFLATE' });
   return out;
 }
-function resolveChartWorkbookTarget(sourceRels: string, target: string): string {
-  if (!target || target.startsWith('/') || /^[a-z]+:/i.test(target) || target.includes('\\')) return '';
-  const source = sourceRels.replace('/_rels/', '/').replace(/\.rels$/i, '');
-  const parts = source.split('/'); parts.pop();
-  for (const piece of target.split('/')) {
-    if (!piece || piece === '.') continue;
-    if (piece === '..') { if (!parts.length) return ''; parts.pop(); }
-    else parts.push(piece);
-  }
-  return parts.join('/');
+function resolveChartWorkbookTarget(sourceRels: string, target: string): string | null {
+  if (!/^ppt\/charts\/_rels\/chart\d+\.xml\.rels$/i.test(sourceRels)) return null;
+  const match = /^\.\.\/embeddings\/([^/\\?#%]+\.xlsx)$/i.exec(target);
+  if (!match || /[\u0000-\u001f:\\/?#%]/.test(match[1]) || match[1] === '..' || match[1] === '.') return null;
+  return `ppt/embeddings/${match[1]}`;
 }

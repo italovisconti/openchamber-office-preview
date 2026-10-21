@@ -9,6 +9,7 @@ const MAX_ENTRIES = 2_000;
 const INPUT_CHUNK = 4 * 1024;
 const PACKAGE_REL = 'http://schemas.openxmlformats.org/package/2006/relationships';
 const OFFICE_REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+const CHART_NS = 'http://schemas.openxmlformats.org/drawingml/2006/chart';
 const MAX_XLSX_ROWS = 100_000;
 const MAX_XLSX_COLUMNS = 500;
 const MAX_XLSX_CELLS = 250_000;
@@ -95,34 +96,63 @@ export async function prepareOfficeArchive(
   if (has('word/document.xml') !== (format === 'docx') || has('xl/workbook.xml') !== (format === 'xlsx') || has('ppt/presentation.xml') !== (format === 'pptx')) {
     throw new Error('Ambiguous OOXML package contains another document type');
   }
-  const chartWorkbooks = format === 'pptx' ? validatedChartWorkbooks(parts) : new Set<string>();
+  const chartWorkbooks = format === 'pptx' ? validatedChartWorkbooks(parts) : { parts: new Set<string>(), relationships: new Set<string>() };
+  const printerSettings = format === 'pptx' ? validatedPrinterSettings(parts) : { parts: new Set<string>(), relationships: new Set<string>() };
   if (format === 'xlsx') validateXlsxBudgets(parts);
   for (const [name, data] of parts) {
     const lower = name.toLowerCase();
-    if (chartWorkbooks.has(name) || (name === 'ppt/embeddings' && chartWorkbooks.size > 0)) continue;
+    if (chartWorkbooks.parts.has(name) || printerSettings.parts.has(name) || (name === 'ppt/embeddings' && chartWorkbooks.parts.size > 0)) continue;
     if (/\.(?:bin|vba|xll|svg|fntdata)$/i.test(lower) || /(?:^|\/)(?:activex|embeddings|activeX|embeddings)(?:\/|$)/i.test(name) || /(?:^|\/)customui\//i.test(name)) {
-      throw new Error('Active or unverifiable OOXML content is not supported');
+      throw new Error('El documento contiene contenido activo o incrustado no compatible con la vista previa.');
     }
     if (lower.endsWith('.rels') || lower.endsWith('.xml')) {
       const xml = text(data);
       if (/<!DOCTYPE|<!ENTITY/i.test(xml)) throw new Error('XML DTD/entities are not supported');
       const doc = new DOMParser().parseFromString(xml, 'application/xml');
       if (doc.querySelector('parsererror')) throw new Error('Malformed OOXML XML');
-      if (doc.querySelector('Relationship[TargetMode="External" i]')) throw new Error('External OOXML relationships are not supported');
+      if (doc.querySelector('Relationship[TargetMode="External" i]')) throw new Error('El documento contiene una referencia a contenido externo no admitida.');
       const root = doc.documentElement;
       const activeElements = ['altChunk', 'oleObject', 'control', 'legacyDrawing', 'svgBlip', 'vbaProject', 'externalLink'];
-      if (activeElements.some((local) => doc.getElementsByTagNameNS('*', local).length > 0)) throw new Error('Active or unverifiable OOXML feature is not supported');
+      if (activeElements.some((local) => doc.getElementsByTagNameNS('*', local).length > 0)) throw new Error('El documento contiene una característica activa no compatible con la vista previa.');
       if (lower.endsWith('.rels') && [...doc.getElementsByTagNameNS('*', 'Relationship')].some((rel) => {
         const type = rel.getAttribute('Type') ?? '';
-        if (/\/package$/i.test(type) && chartWorkbooks.has(resolveSafeChartTarget(name, rel.getAttribute('Target') ?? ''))) return false;
-        return /\/(?:oleobject|control|externallink|attachedtemplate|package|image\.svg\+xml)$/i.test(type);
-      })) throw new Error('Dangerous OOXML relationship');
-      if (root.localName === 'Types' && [...doc.getElementsByTagNameNS('*', 'Default')].some((entry) => /vba|activex/i.test(entry.getAttribute('ContentType') ?? ''))) throw new Error('Active or unverifiable OOXML content is not supported');
-      if (lower.endsWith('.rels') && /(?:Target\s*=\s*["'][^"']*\.(?:html?|js|svg|bin|vba)|TargetMode\s*=\s*["']External)/i.test(xml)) throw new Error('Dangerous OOXML relationship');
+        const targetText = rel.getAttribute('Target') ?? '';
+        const id = rel.getAttribute('Id') ?? '';
+        const chartTarget = resolveChartWorkbookTarget(name, targetText);
+        const chartKey = `${name}\0${id}\0${chartTarget?.toLowerCase() ?? ''}`;
+        const settingsTarget = resolvePrinterSettingsTarget(name, targetText);
+        const settingsKey = `${name}\0${id}\0${settingsTarget?.toLowerCase() ?? ''}`;
+        const mode = rel.getAttribute('TargetMode');
+        if (type === `${OFFICE_REL}/package` && chartWorkbooks.relationships.has(chartKey)) return false;
+        if (type === `${OFFICE_REL}/printerSettings` && (mode === null || mode === 'Internal') && printerSettings.relationships.has(settingsKey)) return false;
+        if (/\/(?:oleobject|control|externallink|attachedtemplate|package|printerSettings|image\.svg\+xml)$/i.test(type)) return true;
+        return /\.(?:html?|js|svg|bin|vba)$/i.test(targetText);
+      })) throw new Error('El documento contiene una relación a un archivo incrustado no compatible.');
+      if (root.localName === 'Types' && [...doc.getElementsByTagNameNS('*', 'Default')].some((entry) => /vba|activex/i.test(entry.getAttribute('ContentType') ?? ''))) throw new Error('El documento contiene contenido activo no compatible con la vista previa.');
     }
   }
   const canonical: Record<string, Uint8Array> = {};
-  for (const [name, data] of parts) canonical[originalNames.get(name)!] = data;
+  for (const [name, data] of parts) {
+    if (printerSettings.parts.has(name)) continue;
+    let canonicalData = data;
+    if (name.endsWith('.rels') && printerSettings.relationships.size) {
+      const relsDoc = parseXml(data);
+      for (const rel of [...relsDoc.getElementsByTagNameNS(PACKAGE_REL, 'Relationship')]) {
+        const target = resolvePrinterSettingsTarget(name, rel.getAttribute('Target') ?? '');
+        const key = `${name}\0${rel.getAttribute('Id') ?? ''}\0${target?.toLowerCase() ?? ''}`;
+        if (printerSettings.relationships.has(key)) rel.remove();
+      }
+      canonicalData = new TextEncoder().encode(new XMLSerializer().serializeToString(relsDoc));
+    } else if (name === '[content_types].xml' && printerSettings.parts.size) {
+      const typesDoc = parseXml(data);
+      for (const override of [...typesDoc.getElementsByTagNameNS('*', 'Override')]) {
+        const partName = override.getAttribute('PartName')?.replace(/^\//, '').toLowerCase();
+        if (partName && printerSettings.parts.has(partName)) override.remove();
+      }
+      canonicalData = new TextEncoder().encode(new XMLSerializer().serializeToString(typesDoc));
+    }
+    canonical[originalNames.get(name)!] = canonicalData;
+  }
   return zipSync(canonical, { level: 6 });
 }
 
@@ -189,8 +219,8 @@ function parseCellAddress(address: string): { row: number; col: number } {
 }
 
 /** Whitelist only a chart's cached-data workbook; the renderer strips this part before loading. */
-function validatedChartWorkbooks(parts: Map<string, Uint8Array>): Set<string> {
-  const accepted = new Set<string>();
+function validatedChartWorkbooks(parts: Map<string, Uint8Array>): { parts: Set<string>; relationships: Set<string> } {
+  const accepted = new Set<string>(), relationships = new Set<string>();
   for (const [relsPath, bytes] of parts) {
     const match = /^ppt\/charts\/_rels\/chart(\d+)\.xml\.rels$/i.exec(relsPath);
     if (!match) continue;
@@ -199,26 +229,69 @@ function validatedChartWorkbooks(parts: Map<string, Uint8Array>): Set<string> {
     if (!chartBytes) continue;
     const relDoc = parseXml(bytes), chartDoc = parseXml(chartBytes);
     for (const rel of [...relDoc.getElementsByTagNameNS(PACKAGE_REL, 'Relationship')]) {
-      if (rel.getAttribute('Type') !== `${OFFICE_REL}/package` || rel.hasAttribute('TargetMode')) continue;
-      const target = resolveSafeChartTarget(relsPath, rel.getAttribute('Target') ?? '');
-      if (!/^ppt\/embeddings\/microsoft_excel_worksheet\d+\.xlsx$/i.test(target)) continue;
+      const mode = rel.getAttribute('TargetMode');
+      if (rel.getAttribute('Type') !== `${OFFICE_REL}/package` || (mode !== null && mode !== 'Internal')) continue;
+      const target = resolveChartWorkbookTarget(relsPath, rel.getAttribute('Target') ?? '');
+      if (!target) continue;
       const id = rel.getAttribute('Id');
-      const externalData = [...chartDoc.getElementsByTagNameNS('*', 'externalData')].some((el) => el.getAttributeNS(OFFICE_REL, 'id') === id);
-      if (id && externalData && parts.has(target.toLowerCase())) accepted.add(target.toLowerCase());
+      const externalData = [...chartDoc.getElementsByTagNameNS(CHART_NS, 'externalData')].some((el) => el.getAttributeNS(OFFICE_REL, 'id') === id);
+      if (id && externalData && parts.has(target.toLowerCase())) {
+        accepted.add(target.toLowerCase());
+        relationships.add(`${relsPath}\0${id}\0${target.toLowerCase()}`);
+      }
     }
   }
-  return accepted;
+  return { parts: accepted, relationships };
 }
-function resolveSafeChartTarget(source: string, target: string): string {
-  if (!target || target.startsWith('/') || /^[a-z]+:/i.test(target) || target.includes('\\')) return '';
-  const sourcePart = source.replace('/_rels/', '/').replace(/\.rels$/i, '');
-  const parts = sourcePart.split('/'); parts.pop();
-  for (const piece of target.split('/')) {
-    if (!piece || piece === '.') continue;
-    if (piece === '..') { if (!parts.length) return ''; parts.pop(); }
-    else parts.push(piece);
+function validatedPrinterSettings(parts: Map<string, Uint8Array>): { parts: Set<string>; relationships: Set<string> } {
+  const accepted = new Set<string>(), relationships = new Set<string>();
+  const typeDocBytes = parts.get('[content_types].xml');
+  if (!typeDocBytes) return { parts: accepted, relationships };
+  const types = parseXml(typeDocBytes);
+  for (const [relsPath, bytes] of parts) {
+    if (!relsPath.endsWith('.rels')) continue;
+    const rels = parseXml(bytes);
+    for (const rel of [...rels.getElementsByTagNameNS(PACKAGE_REL, 'Relationship')]) {
+      const type = rel.getAttribute('Type') ?? '';
+      const mode = rel.getAttribute('TargetMode');
+      if (type !== `${OFFICE_REL}/printerSettings` || (mode !== null && mode !== 'Internal')) continue;
+      const target = resolvePrinterSettingsTarget(relsPath, rel.getAttribute('Target') ?? '');
+      const id = rel.getAttribute('Id');
+      if (!target || !id || !parts.has(target.toLowerCase())) continue;
+      const contentType = printerSettingsContentType(types, target);
+      if (contentType !== 'application/vnd.openxmlformats-officedocument.presentationml.printerSettings') continue;
+      accepted.add(target.toLowerCase());
+      relationships.add(`${relsPath}\0${id}\0${target.toLowerCase()}`);
+    }
   }
-  return parts.join('/').toLowerCase();
+  return { parts: accepted, relationships };
+}
+function printerSettingsContentType(types: Document, target: string): string | undefined {
+  if (types.documentElement.localName !== 'Types') return undefined;
+  const overrides = [...types.getElementsByTagNameNS('*', 'Override')].filter((item) => item.getAttribute('PartName')?.replace(/^\//, '').toLowerCase() === target.toLowerCase());
+  if (overrides.length > 1) return undefined;
+  if (overrides.length === 1) return overrides[0].getAttribute('ContentType') ?? undefined;
+  if (/\.bin$/i.test(target)) {
+    const defaults = [...types.getElementsByTagNameNS('*', 'Default')].filter((item) => item.getAttribute('Extension')?.toLowerCase() === 'bin');
+    if (defaults.length === 1) return defaults[0].getAttribute('ContentType') ?? undefined;
+  }
+  return undefined;
+}
+function resolveChartWorkbookTarget(sourceRels: string, target: string): string | null {
+  if (!/^ppt\/charts\/_rels\/chart\d+\.xml\.rels$/i.test(sourceRels)) return null;
+  const match = /^\.\.\/embeddings\/([^/\\?#%]+\.xlsx)$/i.exec(target);
+  if (!match || /[\u0000-\u001f:\\/?#%]/.test(match[1]) || match[1] === '..' || match[1] === '.') return null;
+  return `ppt/embeddings/${match[1]}`;
+}
+function resolvePrinterSettingsTarget(sourceRels: string, target: string): string | null {
+  const presentationRel = /^ppt\/_rels\/presentation\.xml\.rels$/i.test(sourceRels);
+  const slideRel = /^ppt\/slides\/_rels\/slide\d+\.xml\.rels$/i.test(sourceRels);
+  if (!presentationRel && !slideRel) return null;
+  const expectedPrefix = presentationRel ? 'printerSettings/' : '../printerSettings/';
+  if (!target.toLowerCase().startsWith(expectedPrefix.toLowerCase())) return null;
+  const basename = target.slice(expectedPrefix.length);
+  if (!/^printerSettings\d+\.bin$/i.test(basename)) return null;
+  return `ppt/printerSettings/${basename}`;
 }
 function parseXml(data: Uint8Array): Document {
   const xml = text(data);

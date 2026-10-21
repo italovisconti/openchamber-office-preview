@@ -10,7 +10,7 @@ describe('installable OpenChamber package manifest', () => {
 
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) throw new Error(`${parsed.code}: ${parsed.message}`);
-    expect(parsed.version).toBe('0.1.0');
+    expect(parsed.version).toBe('0.1.1');
     expect(parsed.manifest.contributes.panel.id).toBe('office-preview');
     expect(parsed.manifest.contributes.fileEditors).toHaveLength(3);
   });
