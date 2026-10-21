@@ -48,3 +48,10 @@ Los recorridos del navegador bloquearon destinos ajenos al host local. Las solic
 - No se ha establecido fidelidad exacta de paginación, SmartArt, todos los gráficos o todas las imágenes. Se rechazan características activas y relaciones externas, incluidos enlaces ordinarios.
 - El watchdog permite recuperar esperas asíncronas; no interrumpe JavaScript síncrono. Los presupuestos previos limitan trabajo, no equivalen a aislamiento de proceso.
 - `bun audit` conserva un aviso transitivo de `uuid` usado por ExcelJS. El uso instalado es `v4`; el aviso descrito afecta a v3/v5/v6 con buffer proporcionado. Véase `THIRD_PARTY_NOTICES.md`; no se afirma una auditoría limpia.
+
+### Distribución en GitHub Releases — 2026-10-21
+
+El ZIP se distribuye como asset de la release `v0.1.0`, no como archivo versionado en `dist`. Se reempaquetó únicamente para actualizar el enlace de instalación del README incluido; los bundles compilados no cambiaron respecto al artefacto probado arriba.
+
+- Asset: `openchamber-office-preview-0.1.0.zip`, 1.067.801 bytes; 3.000.912 bytes descomprimidos y 283 archivos.
+- SHA-256: `c6d9ad1ddc5233a7fbe6157d7133ee5162b1c6a045e5c50c2dfa9d12a6681480`.

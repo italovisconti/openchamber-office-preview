@@ -6,7 +6,7 @@ Visor local y de solo lectura de archivos **XLSX, DOCX y PPTX**, integrado en la
 
 Requiere **OpenChamber 2.5.0 o posterior**; la versión web 2.5.0 es la comprobada.
 
-1. Abre el **[ZIP precompilado v0.1.0](openchamber-office-preview/dist/openchamber-office-preview-0.1.0.zip)** y pulsa **Download raw file** en GitHub. Descarga ese archivo, no el ZIP del repositorio completo.
+1. Descarga el **[ZIP precompilado v0.1.0](https://github.com/italovisconti/openchamber-office-preview/releases/download/v0.1.0/openchamber-office-preview-0.1.0.zip)** desde la [release de GitHub](https://github.com/italovisconti/openchamber-office-preview/releases/tag/v0.1.0). Usa ese archivo, no los archivos **Source code** del repositorio.
 2. En OpenChamber, abre **Settings → Extensions** (Configuración → Extensiones).
 3. Usa la opción de instalación desde ZIP, selecciona `openchamber-office-preview-0.1.0.zip` y confirma la instalación. **No lo descomprimas**.
 4. Comprueba que **Office Preview** aparece instalado y habilitado en la lista de extensiones.

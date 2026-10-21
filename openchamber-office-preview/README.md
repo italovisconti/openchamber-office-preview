@@ -4,7 +4,7 @@ Read-only previews for `.xlsx`, `.docx`, and `.pptx` files in OpenChamber's exis
 
 ## Install
 
-Download the [prebuilt v0.1.0 ZIP](https://github.com/italovisconti/openchamber-office-preview/raw/refs/heads/main/openchamber-office-preview/dist/openchamber-office-preview-0.1.0.zip). In OpenChamber, open **Settings → Extensions** and install that ZIP. No build is needed on the host. For local development, run the commands below from this directory; `bun run package` creates `dist/openchamber-office-preview-0.1.0.zip`.
+Download the [prebuilt v0.1.0 ZIP](https://github.com/italovisconti/openchamber-office-preview/releases/download/v0.1.0/openchamber-office-preview-0.1.0.zip) from [GitHub Releases](https://github.com/italovisconti/openchamber-office-preview/releases/tag/v0.1.0), not the source-code archives. In OpenChamber, open **Settings → Extensions** and install that ZIP. No build is needed on the host. For local development, run the commands below from this directory; `bun run package` creates `dist/openchamber-office-preview-0.1.0.zip` locally. Built ZIPs are distributed as release assets, not tracked in Git.
 
 ## Compatibility status
 
