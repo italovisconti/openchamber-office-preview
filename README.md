@@ -6,6 +6,21 @@ Visor local y de solo lectura de archivos **XLSX, DOCX y PPTX**, integrado en la
 
 Requiere **OpenChamber 2.5.0 o posterior**; la versión web 2.5.0 es la comprobada.
 
+### Opción 1: URL Git
+
+1. En **Settings → Extensions**, pega esta URL en el campo de instalación:
+   ```text
+   https://github.com/italovisconti/openchamber-office-preview.git
+   ```
+2. Selecciona la identidad Git si OpenChamber lo solicita y confirma la instalación.
+3. Comprueba que **Office Preview** aparece habilitado y abre un documento desde el árbol de archivos.
+
+El repositorio incluye el JavaScript compilado: no necesitas ejecutar un build. Para futuras versiones, utiliza las opciones de actualización de la extensión en OpenChamber.
+
+**Alternativa SSH:** `git@github.com:italovisconti/openchamber-office-preview.git`. Requiere una identidad con acceso al repositorio. La identidad seleccionada pertenece a la instancia de OpenChamber y se reutiliza en las actualizaciones; **Global Identity** usa la configuración Git/SSH del servidor, no la de tu navegador.
+
+### Opción 2: ZIP de la release
+
 1. Descarga el **[ZIP precompilado v0.1.0](https://github.com/italovisconti/openchamber-office-preview/releases/download/v0.1.0/openchamber-office-preview-0.1.0.zip)** desde la [release de GitHub](https://github.com/italovisconti/openchamber-office-preview/releases/tag/v0.1.0). Usa ese archivo, no los archivos **Source code** del repositorio.
 2. En OpenChamber, abre **Settings → Extensions** (Configuración → Extensiones).
 3. Usa la opción de instalación desde ZIP, selecciona `openchamber-office-preview-0.1.0.zip` y confirma la instalación. **No lo descomprimas**.

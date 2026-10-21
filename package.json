@@ -1,0 +1,19 @@
+{
+  "name": "openchamber-office-preview",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "openchamber": {
+    "apiVersion": 1,
+    "engines": { "openchamber": ">=2.5.0" },
+    "contributes": {
+      "panel": { "id": "office-preview", "name": "Office Preview", "icon": "file-text" },
+      "fileEditors": [
+        { "id": "xlsx", "title": "Vista previa XLSX", "match": ["*.xlsx"], "entry": "openchamber-office-preview/editor/xlsx.html", "content": "binary" },
+        { "id": "docx", "title": "Vista previa DOCX", "match": ["*.docx"], "entry": "openchamber-office-preview/editor/docx.html", "content": "binary" },
+        { "id": "pptx", "title": "Vista previa PPTX", "match": ["*.pptx"], "entry": "openchamber-office-preview/editor/pptx.html", "content": "binary" }
+      ]
+    }
+  }
+}
